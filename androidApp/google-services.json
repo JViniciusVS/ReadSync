@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "263101025969",
+    "project_id": "readsync-c79a2",
+    "storage_bucket": "readsync-c79a2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:263101025969:android:f8a7751bf30b0a06ff5c90",
+        "android_client_info": {
+          "package_name": "com.example.readsync2.android"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "263101025969-ub6u71ro8ddop6uhidbfk8rr3menjr9j.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDVwpYEpz9-iF_jskOW2vyISn_CJMqPbfU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "263101025969-ub6u71ro8ddop6uhidbfk8rr3menjr9j.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

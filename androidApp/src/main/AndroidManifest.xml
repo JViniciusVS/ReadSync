@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application
+        android:allowBackup="false"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme"
+        android:label="ReadSync">
+
+        <!-- MainActivity que é a tela principal de lançamento -->
+        <activity
+            android:name="com.example.readsync.MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Telas para Admin -->
+        <activity android:name="com.example.readsync.AdminLoginActivity" />
+        <activity android:name="com.example.readsync.TelaPrincipalAdmin" />
+        <activity android:name="com.example.readsync.LivroFormActivity" />
+
+        <!-- Telas para Leitor -->
+
+        <activity android:name="com.example.readsync.LeitorLoginActivity" />
+        <activity android:name="com.example.readsync.TelaPrincipalLeitor" />
+        <activity android:name="com.example.readsync.CadastroActivity" />
+        <activity android:name="com.example.readsync.LivroDetalhesActivity" />
+        <activity android:name="com.example.readsync.TelaChatbot" />
+
+    </application>
+
+</manifest>
