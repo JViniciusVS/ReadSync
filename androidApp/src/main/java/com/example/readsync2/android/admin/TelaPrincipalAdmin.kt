@@ -3,6 +3,7 @@ package com.example.readsync
 import android.content.Intent
 import android.os.Bundle
 import android.os.Parcelable
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -130,7 +131,18 @@ fun AdminHomeScreen(context: TelaPrincipalAdmin) {
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         items(livros) { livro ->
-                            LivroCardAdmin(livro = livro, context = context)
+                            LivroCardAdmin(
+                                livro = livro,
+                                context = context,
+                                onBookClick = {
+                                    Log.d("LivroCard", "Livro clicado: ${livro.titulo}")
+                                    val intent = Intent(context, LivroDetalhesActivity::class.java).apply {
+                                        putExtra("livroId", livro.id)
+                                        putExtra("admin", "true")
+                                    }
+                                    context.startActivity(intent)
+                                }
+                            )
                         }
                     }
 
@@ -142,13 +154,14 @@ fun AdminHomeScreen(context: TelaPrincipalAdmin) {
 }
 
 @Composable
-fun LivroCardAdmin(livro: Livro2, context: TelaPrincipalAdmin) {
+fun LivroCardAdmin(livro: Livro2, context: TelaPrincipalAdmin, onBookClick: (Livro2) -> Unit) {
     val db = FirebaseFirestore.getInstance()
 
     Card(
         modifier = Modifier
             .width(200.dp)
             .height(300.dp)
+            .clickable { onBookClick(livro) }
             .padding(8.dp),
         elevation = 4.dp
     ) {

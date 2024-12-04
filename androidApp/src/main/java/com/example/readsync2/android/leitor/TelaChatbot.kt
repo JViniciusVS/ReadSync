@@ -17,9 +17,11 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.readsync2.android.leitor.GeminiViewModel
-import kotlinx.coroutines.flow.collectLatest
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import android.util.Log
+import okhttp3.*
+import org.json.JSONObject
+import java.io.IOException
 
 class TelaChatbot : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -32,28 +34,16 @@ class TelaChatbot : ComponentActivity() {
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun ChatbotScreen(viewModel: GeminiViewModel = viewModel()) {
+fun ChatbotScreen() {
     var userInput by remember { mutableStateOf("") }
     var chatHistory by remember { mutableStateOf(listOf<String>()) }
-
-    // Controlador do teclado
     val keyboardController = LocalSoftwareKeyboardController.current
-
-    // Observa o fluxo de resposta do GeminiViewModel
-    LaunchedEffect(Unit) {
-        viewModel.resposta.collectLatest { resposta ->
-            if (resposta.isNotEmpty()) {
-                chatHistory = chatHistory + "Chatbot: $resposta"
-            }
-        }
-    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        // Exibe o histórico do chat
         LazyColumn(
             modifier = Modifier
                 .weight(1f)
@@ -73,37 +63,50 @@ fun ChatbotScreen(viewModel: GeminiViewModel = viewModel()) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Row para incluir o botão dentro do campo de entrada
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp) // Espaço entre os elementos
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Campo para entrada do usuário
             OutlinedTextField(
                 value = userInput,
                 onValueChange = { userInput = it },
                 label = { Text("Digite sua mensagem") },
-                modifier = Modifier.weight(1f) // Preenche o espaço disponível
+                modifier = Modifier.weight(1f)
             )
 
-            // Botão de enviar mensagem
             Button(
                 onClick = {
                     if (userInput.isNotBlank()) {
-                        // Adiciona a mensagem do usuário no histórico
+                        // Exibe a mensagem do usuário no histórico
                         chatHistory = chatHistory + "Você: $userInput"
 
-                        // Chama o ViewModel para processar a mensagem
-                        viewModel.callIA(userInput)
+                        // Faz a requisição para o endpoint
+                        val client = OkHttpClient()
+                        val json = JSONObject().put("pergunta", userInput).toString()
+                        val requestBody = RequestBody.create("application/json".toMediaTypeOrNull(), json)
+                        val request = Request.Builder()
+                            .url("https://api-gemini-1ck0.onrender.com/chat")
+                            .post(requestBody)
+                            .build()
 
-                        // Esconde o teclado após enviar a mensagem
-                        keyboardController?.hide()
+                        client.newCall(request).enqueue(object : Callback {
+                            override fun onFailure(call: Call, e: IOException) {
+                                Log.e("Chatbot", "Erro na requisição: $e")
+                                chatHistory = chatHistory + "Erro: Não foi possível obter resposta."
+                            }
 
-                        // Limpa o campo de entrada
+                            override fun onResponse(call: Call, response: Response) {
+                                val respostaJson = response.body?.string()
+                                val respostaTexto = JSONObject(respostaJson).getString("resposta")
+                                chatHistory = chatHistory + "Chatbot: $respostaTexto"
+                            }
+                        })
+
                         userInput = ""
+                        keyboardController?.hide()
                     }
                 },
-                modifier = Modifier.align(Alignment.CenterVertically) // Alinha o botão ao centro verticalmente
+                modifier = Modifier.align(Alignment.CenterVertically)
             ) {
                 Text("Enviar")
             }

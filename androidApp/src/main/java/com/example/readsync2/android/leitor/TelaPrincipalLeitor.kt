@@ -166,6 +166,7 @@ fun ReaderHomeScreen(context: TelaPrincipalLeitor) {
                                     Log.d("LivroCard", "Livro clicado: ${livro.titulo}")
                                     val intent = Intent(context, LivroDetalhesActivity::class.java).apply {
                                         putExtra("livroId", livro.id)
+                                        putExtra("admin", "false")
                                     }
                                     context.startActivity(intent)
                                 }

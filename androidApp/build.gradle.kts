@@ -7,11 +7,11 @@ plugins {
 
 android {
     namespace = "com.example.readsync2.android"
-    compileSdk = 34
+    compileSdk = 33
     defaultConfig {
         applicationId = "com.example.readsync2.android"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 33
         versionCode = 1
         versionName = "1.0"
     }
@@ -54,6 +54,5 @@ dependencies {
     implementation("com.google.firebase:firebase-auth-ktx:21.0.1")
     implementation("com.google.android.gms:play-services-auth:20.5.0")
     implementation("io.coil-kt:coil-compose:2.4.0")
-    implementation("com.google.ai.client.generativeai:generativeai:0.1.0")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.0")
+    implementation("com.squareup.okhttp3:okhttp:4.10.0")
 }

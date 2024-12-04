@@ -25,6 +25,7 @@ import com.example.readsync2.android.R
 import com.google.firebase.firestore.FirebaseFirestore
 import java.util.*
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
@@ -40,14 +41,31 @@ class LivroDetalhesActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         val livroId = intent.getStringExtra("livroId")
+        val admin = intent.getStringExtra("admin")
         setContent {
-            LivroDetalhesScreen(livroId = livroId)
+            LivroDetalhesScreen(livroId = livroId, admin = admin)
         }
+    }
+}
+
+fun apagarComentario(comentarioId: String, onSuccess: () -> Unit) {
+    if (comentarioId.isNotEmpty()) {
+        val db = FirebaseFirestore.getInstance()
+        db.collection("comentarios")
+            .document(comentarioId)
+            .delete()
+            .addOnSuccessListener {
+                Log.d("Firestore", "Comentário apagado com sucesso.")
+                onSuccess() // Chama o callback de sucesso
+            }
+            .addOnFailureListener { e ->
+                Log.e("Firestore", "Erro ao apagar comentário.", e)
+            }
     }
 }
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun LivroDetalhesScreen(livroId: String?) {
+fun LivroDetalhesScreen(livroId: String?, admin: String?) {
     var descricao by remember { mutableStateOf(TextFieldValue("")) }
     var capaUrl by remember { mutableStateOf("") }
     var comentario by remember { mutableStateOf("") }
@@ -108,7 +126,8 @@ fun LivroDetalhesScreen(livroId: String?) {
                     val comentarios = snapshot.documents.mapNotNull { document ->
                         mapOf(
                             "comentario" to (document.getString("comentario") ?: ""),
-                            "nomeUsuario" to (document.getString("nomeUsuario") ?: "Anônimo")
+                            "nomeUsuario" to (document.getString("nomeUsuario") ?: "Anônimo"),
+                            "id" to (document.id)
                         )
                     }
                     listaComentarios = comentarios
@@ -270,38 +289,36 @@ fun LivroDetalhesScreen(livroId: String?) {
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                Button(onClick = { scope.launch { modalBottomSheetState.show() } }) {
-                    Text(text = "Abrir Detalhes do Livro")
-                }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-                // Capa do livro
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center
-            ) {
-                SubcomposeAsyncImage(
-                    model = capaUrl,
-                    contentDescription = "Capa do livro",
-                    modifier = Modifier.size(150.dp),
-                    loading = {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            CircularProgressIndicator()
+                // Capa do livro com ação de clique
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            scope.launch { modalBottomSheetState.show() }
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    SubcomposeAsyncImage(
+                        model = capaUrl,
+                        contentDescription = "Capa do livro",
+                        modifier = Modifier.size(150.dp),
+                        loading = {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                CircularProgressIndicator()
+                            }
+                        },
+                        error = {
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_book),
+                                contentDescription = "Erro ao carregar imagem",
+                                modifier = Modifier.size(150.dp)
+                            )
                         }
-                    },
-                    error = {
-                        Image(
-                            painter = painterResource(id = R.drawable.ic_book),
-                            contentDescription = "Erro ao carregar imagem",
-                            modifier = Modifier.size(150.dp)
-                        )
-                    }
-                )
-            }
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -309,6 +326,7 @@ fun LivroDetalhesScreen(livroId: String?) {
                 if (listaComentarios.isNotEmpty()) {
                     LazyColumn {
                         items(listaComentarios) { comentarioMap ->
+                            val comentarioId = comentarioMap["id"] ?: "" // Id do comentário
                             val comentario = comentarioMap["comentario"] ?: ""
                             val nomeUsuario = comentarioMap["nomeUsuario"] ?: ""
 
@@ -317,9 +335,10 @@ fun LivroDetalhesScreen(livroId: String?) {
                                     text = "${nomeUsuario}: ${comentario}",
                                     modifier = Modifier.weight(1f)
                                 )
+
                                 IconButton(onClick = {
                                     tts?.speak(
-                                        "{$nomeUsuario} disse:  ${comentario}",
+                                        "$nomeUsuario disse: $comentario",
                                         TextToSpeech.QUEUE_FLUSH,
                                         null,
                                         null
@@ -330,6 +349,22 @@ fun LivroDetalhesScreen(livroId: String?) {
                                         contentDescription = "Ler comentário",
                                         modifier = Modifier.size(20.dp)
                                     )
+                                }
+
+                                // Botão para apagar o comentário (visível apenas para admin)
+                                if (admin == "true") {
+                                    IconButton(onClick = {
+                                        apagarComentario(comentarioId) {
+                                            // Atualiza a lista local removendo o comentário apagado
+                                            listaComentarios = listaComentarios.filterNot { it["id"] == comentarioId }
+                                        }
+                                    }) {
+                                        Icon(
+                                            painter = painterResource(id = R.drawable.ic_delete),
+                                            contentDescription = "Apagar comentário",
+                                            modifier = Modifier.size(20.dp),
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -349,12 +384,13 @@ fun LivroDetalhesScreen(livroId: String?) {
                     .padding(16.dp)
                     .align(Alignment.BottomCenter)
             ) {
-                OutlinedTextField(
-                    value = comentario,
-                    onValueChange = { comentario = it },
-                    label = { Text("Escreva seu comentário") },
-                    modifier = Modifier.weight(1f)
-                )
+                if (admin != "true") {
+                    OutlinedTextField(
+                        value = comentario,
+                        onValueChange = { comentario = it },
+                        label = { Text("Escreva seu comentário") },
+                        modifier = Modifier.weight(1f)
+                    )
                 Spacer(modifier = Modifier.width(8.dp))
                 IconButton(onClick = {
                     if (comentario.isNotEmpty() && livroId != null) {
@@ -383,7 +419,8 @@ fun LivroDetalhesScreen(livroId: String?) {
                         painter = painterResource(id = R.drawable.ic_send),
                         contentDescription = "Enviar",
                         modifier = Modifier.size(32.dp)
-                    )
+                        )
+                    }
                 }
             }
         }
